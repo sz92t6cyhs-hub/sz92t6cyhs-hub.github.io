@@ -151,7 +151,7 @@
   </div>
 
   <div class="note">
-    検出には Gemini Vision API が必要です。APIキーはブラウザに保存されず、サーバー経由で処理する本番環境では安全に扱われます。デモ版ではキー入力が必要です。
+    検出には Gemini Vision API が必要です。デモ版ではキー入力が必要です。
   </div>
 
 <script>
@@ -180,7 +180,7 @@
   function handleFile(file) {
     currentFile = file;
     var reader = new FileReader();
-    reader.onclick = function(e) {
+    reader.onload = function(e) {
       previewImg.src = e.target.result;
       preview.style.display = 'block';
       previewMeta.textContent = file.name + ' / ' + Math.round(file.size / 1024) + ' KB';
@@ -202,7 +202,7 @@
     statusEl.className = 'status';
 
     var reader = new FileReader();
-    reader.onclick = function(e) {
+    reader.onload = function(e) {
       var base64 = e.target.result.split(',')[1];
       var prompt = 'この写真を分析してください。皮膚上のほくろ・シミ・色素沈着、顔の特徴（目・眉・鼻・口・輪郭）、写っているテキスト、その他の注目特徴をすべて検出し、それぞれの位置を bounding box で示してください。出力は JSON のみ。形式: {"features":[{"label":"mole"|"spot"|"scar"|"face"|"text"|"other","bbox":[x_min,y_min,x_max,y_max],"confidence":0.0-1.0,"description":"特徴の説明"}]}。bbox の座標は画像の幅・高さに対する正規化値（0-1）で、左上が (0,0)、右下が (1,1) です。特徴が見つからない場合は {"features":[]} を返してください。';
 
