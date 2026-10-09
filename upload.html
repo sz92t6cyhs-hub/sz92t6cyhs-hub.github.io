@@ -19,12 +19,13 @@
     background:var(--accent); color:var(--fg);
     font-size:1.15rem; font-weight:700; padding:28px 16px;
     border-radius:4px; letter-spacing:0.05em;
+    cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
-  .pick input { position:absolute; width:1px; height:1px; opacity:0; }
+  .pick input { position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; }
   .preview { margin-top:20px; display:none; }
   .preview img { width:100%; max-height:420px; object-fit:contain; background:#000; border-radius:4px; }
   .meta { margin-top:8px; color:var(--muted); font-size:0.85rem; }
-  .btn { display:block; width:100%; margin-top:16px; background:var(--accent); color:var(--fg); border:none; font-size:1rem; font-weight:700; padding:16px; border-radius:4px; }
+  .btn { display:block; width:100%; margin-top:16px; background:var(--accent); color:var(--fg); border:none; font-size:1rem; font-weight:700; padding:16px; border-radius:4px; cursor:pointer; }
   .btn:disabled { background:var(--border); }
   .status { margin-top:12px; color:var(--muted); font-size:0.9rem; min-height:1.2em; }
   .ok { color:#7ec8a3; }
@@ -40,11 +41,11 @@
   <div class="wordmark"><a href="index.html">写<span>探</span></a></div>
   <h1>写真を登録</h1>
   <p class="sub">下のボタンをタップすると、写真を選べます。</p>
-  <label class="pick">写真を選ぶ
-    <input id="fileInput" type="file" accept="image/*">
+  <label class="pick" for="fileInput">写真を選ぶ
+    <input id="fileInput" type="file" accept="image/*" capture="environment">
   </label>
   <div class="preview" id="preview">
-    <img id="previewImg" alt="">
+    <img id="previewImg" alt="プレビュー">
     <div class="meta" id="meta"></div>
   </div>
   <button class="btn" id="go" type="button" disabled>特徴を検出する</button>
@@ -103,14 +104,14 @@
           return;
         }
         var text = data.candidates[0].content.parts[0].text;
-        text = text.replace(/^```json\s*/i, "").replace(/^```\s*/, "").replace(/```$/, "");
+        text = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```$/i, "").trim();
         var result = JSON.parse(text);
         var features = result.features || [];
         list.innerHTML = "";
         features.forEach(function (f) {
           var d = document.createElement("div");
           d.className = "item";
-          d.innerHTML = "<div class=\"tag\">" + (f.label || "other") + "</div>" + (f.description || "");
+          d.innerHTML = "<div class=\"tag\">" + (f.label || "other") + "</div>" + (f.description || "").replace(/</g, "<").replace(/>/g, ">").replace(/\n/g, "<br>");
           list.appendChild(d);
         });
         var db = JSON.parse(localStorage.getItem("shatan_db") || "[]");
