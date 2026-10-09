@@ -39,7 +39,6 @@
   .wordmark .accent { color: var(--accent); }
   .wordmark a { color: inherit; text-decoration: none; }
   .back { color: var(--muted); font-size: 0.9rem; text-decoration: none; }
-  .back:hover { color: var(--fg); }
   .card {
     max-width: 640px;
     margin: 0 auto;
@@ -56,17 +55,15 @@
     padding: 48px 24px;
     text-align: center;
     cursor: pointer;
-    transition: border-color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
-  .dropzone:hover, .dropzone.dragover { border-color: var(--accent); }
+  .dropzone:active { border-color: var(--accent); }
   .dropzone .icon { font-size: 2rem; margin-bottom: 12px; }
   .dropzone p { color: var(--muted); font-size: 0.95rem; }
   .dropzone .hint { font-size: 0.8rem; margin-top: 8px; }
   input[type=file] { display: none; }
-  .preview {
-    margin-top: 24px;
-    display: none;
-  }
+  .preview { margin-top: 24px; display: none; }
   .preview img {
     width: 100%;
     max-height: 400px;
@@ -89,8 +86,9 @@
     font-family: inherit;
     font-weight: 600;
     letter-spacing: 0.05em;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
-  .btn:hover { background: #d4522a; }
   .btn:disabled { background: var(--border); cursor: not-allowed; }
   .status {
     margin-top: 16px;
@@ -137,7 +135,7 @@
       <p>写真をタップして選択</p>
       <p class="hint">JPEG / PNG / HEIC 対応</p>
     </div>
-    <input type="file" id="fileInput" accept="image/*">
+    <input type="file" id="fileInput" accept="image/*" capture="environment">
 
     <div class="preview" id="preview">
       <img id="previewImg">
@@ -152,6 +150,7 @@
 
   <div class="note">
     検出には Gemini Vision API が必要です。デモ版ではキー入力が必要です。
+    写真は端末内のブラウザに保存され、外部には送られません（解析時のみ Gemini に送信）。
   </div>
 
 <script>
@@ -165,7 +164,10 @@
   var featuresEl = document.getElementById('features);
   var currentFile = null;
 
-  dropzone.addEventListener('click', function() { fileInput.click(); });
+  dropzone.addEventListener('click', function(e) {
+    e.preventDefault();
+    fileInput.click();
+  });
   dropzone.addEventListener('dragover', function(e) { e.preventDefault(); dropzone.classList.add('dragover'); });
   dropzone.addEventListener('dragleave', function() { dropzone.classList.remove('dragover'); });
   dropzone.addEventListener('drop', function(e) {
@@ -202,9 +204,10 @@
     statusEl.className = 'status';
 
     var reader = new FileReader();
+    reader.onclick = null;
     reader.onload = function(e) {
       var base64 = e.target.result.split(',')[1];
-      var prompt = 'この写真を分析してください。皮膚上のほくろ・シミ・色素沈着、顔の特徴（目・眉・鼻・口・輪郭）、写っているテキスト、その他の注目特徴をすべて検出し、それぞれの位置を bounding box で示してください。出力は JSON のみ。形式: {"features":[{"label":"mole"|"spot"|"scar"|"face"|"text"|"other","bbox":[x_min,y_min,x_max,y_max],"confidence":0.0-1.0,"description":"特徴の説明"}]}。bbox の座標は画像の幅・高さに対する正規化値（0-1）で、左上が (0,0)、右下が (1,1) です。特徴が見つからない場合は {"features":[]} を返してください。';
+      var prompt = 'この写真を分析してください。皮膚上のほくろ・シミ・色素沈着、顔の特徴（目・眉・鼻・口・輪郭）、写っているテキスト、その他の注目特徴をすべて検出し、それぞれの位置を bounding box で示してください。出力は JSON のみ。形式: {"features":[{"label":"mole"|"spot"|"scar"|"face"|"text"|"other","bbox":[x_min,y_min,x_max,y_max],"confidence":0.0-1.0,"description":"特徴の説明"}]}.bbox の座標は画像の幅・高さに対する正規化値（0-1）で、左上が (0,0)、右下が (1,1) です。特徴が見つからない場合は {"features":[]} を返してください。';
 
       fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey, {
         method: 'POST',
