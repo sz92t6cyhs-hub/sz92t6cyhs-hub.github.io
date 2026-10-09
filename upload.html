@@ -5,35 +5,128 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>写真を登録 - 写探 Shatan</title>
 <style>
-  body { background: #12110f; color: #f4f0e8; font-family: -apple-system, sans-serif; padding: 24px; }
-  .card { max-width: 640px; margin: 0 auto; background: #1c1a17; border: 1px solid #2e2b27; border-radius: 4px; padding: 32px; }
-  h1 { font-size: 1.3rem; margin-bottom: 8px; }
-  .sub { color: #8a8478; font-size: 0.9rem; margin-bottom: 28px; }
-  .pick { display: block; width: 100%; background: #c44722; color: #f4f0e8; border: none; font-size: 1.1rem; padding: 20px; border-radius: 4px; font-weight: 600; cursor: pointer; }
-  .pick:active { background: #d4522a; }
+  :root {
+    --bg: #12110f;
+    --fg: #f4f0e8;
+    --accent: #c44722;
+    --muted: #8a8478;
+    --card: #1c1a17;
+    --border: #2e2b27;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    min-height: 100vh;
+    padding: 24px;
+  }
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 640px;
+    margin: 0 auto 32px;
+  }
+  .wordmark { font-size: 1.4rem; font-weight: 700; letter-spacing: 0.15em; }
+  .wordmark .accent { color: var(--accent); }
+  .wordmark a { color: inherit; text-decoration: none; }
+  .back { color: var(--muted); font-size: 0.9rem; text-decoration: none; }
+  .card {
+    max-width: 640px;
+    margin: 0 auto;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 32px;
+  }
+  h1 { font-size: 1.3rem; font-weight: 600; margin-bottom: 8px; }
+  .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 28px; }
+  .pick-btn {
+    display: block;
+    width: 100%;
+    background: var(--accent);
+    border: none;
+    color: var(--fg);
+    font-size: 1.1rem;
+    padding: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .pick-btn:active { background: #d4522a; }
+  input[type=file] { display: none; }
   .preview { margin-top: 24px; display: none; }
-  .preview img { width: 100%; max-height: 400px; object-fit: contain; background: #000; border-radius: 4px; }
-  .preview .meta { margin-top: 12px; color: #8a8478; font-size: 0.85rem; }
-  .btn { display: block; width: 100%; margin-top: 24px; background: #c44722; border: none; color: #f4f0e8; font-size: 1rem; padding: 16px; border-radius: 4px; cursor: pointer; font-weight: 600; }
-  .btn:disabled { background: #2e2b27; cursor: not-allowed; }
-  .status { margin-top: 16px; font-size: 0.9rem; color: #8a8478; min-height: 1.4em; }
+  .preview img {
+    width: 100%;
+    max-height: 400px;
+    object-fit: contain;
+    border-radius: 4px;
+    background: #000;
+  }
+  .preview .meta { margin-top: 12px; color: var(--muted); font-size: 0.85rem; }
+  .btn {
+    display: block;
+    width: 100%;
+    margin-top: 24px;
+    background: var(--accent);
+    border: none;
+    color: var(--fg);
+    font-size: 1rem;
+    padding: 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:disabled { background: var(--border); cursor: not-allowed; }
+  .status {
+    margin-top: 16px;
+    font-size: 0.9rem;
+    color: var(--muted);
+    min-height: 1.4em;
+  }
   .status.error { color: #e07060; }
   .status.ok { color: #7ec8a3; }
   .features { margin-top: 24px; }
-  .features h2 { font-size: 0.85rem; color: #8a8478; margin-bottom: 12px; }
-  .feature-item { background: #12110f; border: 1px solid #2e2b27; border-radius: 4px; padding: 12px 16px; margin-bottom: 8px; font-size: 0.9rem; }
-  .feature-item .tag { color: #c44722; font-size: 0.75rem; }
-  .note { margin-top: 32px; color: #8a8478; font-size: 0.75rem; line-height: 1.6; max-width: 640px; margin-left: auto; margin-right: auto; }
-  .back { color: #8a8478; font-size: 0.9rem; text-decoration: none; }
+  .features h2 { font-size: 0.85rem; color: var(--muted); letter-spacing: 0.1em; margin-bottom: 12px; }
+  .feature-item {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+  }
+  .feature-item .tag { color: var(--accent); font-size: 0.75rem; letter-spacing: 0.1em; }
+  .note {
+    margin-top: 32px;
+    color: var(--muted);
+    font-size: 0.75rem;
+    line-height: 1.6;
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+  }
 </style>
 </head>
 <body>
+  <div class="header">
+    <div class="wordmark"><a href="index.html">写<span class="accent">探</span></a></div>
+    <a class="back" href="index.html">&larr; 検索に戻る</a>
+  </div>
+
   <div class="card">
     <h1>写真を登録</h1>
     <p class="sub">写真を選ぶと、AIが特徴を自動で検出して検索できるようにします。</p>
 
-    <label class="pick" for="fileInput">写真を選ぶ</label>
-    <input type="file" id="fileInput" accept="image/*" style="display:none">
+    <button class="pick-btn" id="pickBtn" type="button">写真を選ぶ</button>
+    <input type="file" id="fileInput" accept="image/*">
 
     <div class="preview" id="preview">
       <img id="previewImg">
@@ -42,27 +135,35 @@
 
     <button class="btn" id="analyzeBtn" disabled>特徴を検出する</button>
     <div class="status" id="status"></div>
+
     <div class="features" id="features"></div>
   </div>
 
-  <div class="note">検出には Gemini Vision API が必要です。デモ版ではキー入力が必要です。<br><a class="back" href="index.html">&larr; 検索に戻る</a></div>
+  <div class="note">
+    検出には Gemini Vision API が必要です。デモ版ではキー入力が必要です。
+  </div>
 
 <script>
+  var pickBtn = document.getElementById('pickBtn');
   var fileInput = document.getElementById('fileInput');
-  var preview = document.getElementById('preview');
-  var previewImg = document.getElementById('previewImg');
-  var previewMeta = document.getElementById('previewMeta');
-  var analyzeBtn = document.getElementById('analyzeBtn');
-  var statusEl = document.getElementById('status');
-  var featuresEl = document.getElementById('features');
+  var preview = document.getElementById('preview);
+  var previewImg = document.getElementById('previewImg);
+  var previewMeta = document.getElementById('previewMeta);
+  var analyzeBtn = document.getElementById('analyzeBtn);
+  var statusEl = document.getElementById('status);
+  var featuresEl = document.getElementById('features);
   var currentFile = null;
 
+  pickBtn.addEventListener('click', function() {
+    fileInput.click();
+  });
   fileInput.addEventListener('change', function() {
-    if (!fileInput.files.length) return;
-    var file = fileInput.files[0];
+    if (fileInput.files.length) handleFile(fileInput.files[0]);
+  });
+
+  function handleFile(file) {
     currentFile = file;
     var reader = new FileReader();
-    reader.onclick = null;
     reader.onload = function(e) {
       previewImg.src = e.target.result;
       preview.style.display = 'block';
@@ -72,11 +173,11 @@
       featuresEl.innerHTML = '';
     };
     reader.readAsDataURL(file);
-  });
+  }
 
   analyzeBtn.addEventListener('click', function() {
     if (!currentFile) return;
-    var apiKey = localStorage.getItem('gemini_api_key') || prompt('ジェミニ API キーを入力してください（ブラウザに保存されます）: ');
+    var apiKey = localStorage.getItem('gemini_api_key') || prompt('ジェミニ API キーを入力してください（ブラウザの localStorage に保存されます）: ');
     if (!apiKey) return;
     localStorage.setItem('gemini_api_key', apiKey);
 
@@ -88,10 +189,11 @@
     reader.onclick = null;
     reader.onload = function(e) {
       var base64 = e.target.result.split(',')[1];
-      var prompt = 'この写真を分析してください。皮腔上のほくろ・シミ・色素沉淀、顔の特徴（目・看・鼻・口・輪郭）、写っているテキスト、その他の注目特徴をすべて検出し、それぞれの位置を bounding box で示してください。出力は JSON のみ。形式: {"features":[{"label":"mole"|"spot"|"scar"|"face"|"text"|"other","bbox":[x_min,y_min,x_max,y_max],"confidence":0.0-1.0,"description":"特徴の説明"}]}。bbox の座標は画像の幅・高さに対する正規化値（0-1）で、左上が (0,0)、右下が (1,1) です。特徴が見つからない場合は {"features":[]} を返してください。';
+      var prompt = 'この写真を分析してください。皮腔上のほくろ・シミ・色素沉淀、顔の特徴（目・くまく・鼻・口・輪郭）、写っているテキスト、その他の注目特徴をすべて検出し、それぞれの位置を bounding box で示してください。出力は JSON のみ。形式: {"features":[{"label":"mole"|"spot"|"scar"|"face"|"text"|"other","bbox":[x_min,y_min,x_max,y_max],"confidence":0.0-1.0,"description":"特徴の説明"}]}。bbox の座標は画像の幅・高さに対する正規化値（0-1）で、左上が (0,0)、右下が (1,1) です。特徴が見つからない場合は {"features":[]} を返してください。';
 
       fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey, {
         method: 'POST',
+        Safari: null,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify([
           { parts: [{ text: prompt }, { inline_data: { mime_type: currentFile.type || 'image/jpeg', data: base64 } }] }
