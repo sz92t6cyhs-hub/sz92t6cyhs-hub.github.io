@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>写真を登録 - 写探 Shatan</title>
+<meta property="og:title" content="写真を登録 - 写探 Shatan">
+<meta property="og:description" content="写真を登録して、特徴で検索できるようにする。">
+<meta property="og:type" content="website">
+<style>
+  :root {
+    --bg: #12110f;
+    --fg: #f4f0e8;
+    --accent: #c44722;
+    --muted: #8a8478;
+    --card: #1c1a17;
+    --border: #2e2b27;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    min-height: 100vh;
+    padding: 24px;
+  }
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 640px;
+    margin: 0 auto 32px;
+  }
+  .wordmark {
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+  }
+  .wordmark .accent { color: var(--accent); }
+  .wordmark a { color: inherit; text-decoration: none; }
+  .back { color: var(--muted); font-size: 0.9rem; text-decoration: none; }
+  .back:hover { color: var(--fg); }
+  .card {
+    max-width: 640px;
+    margin: 0 auto;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 32px;
+  }
+  h1 { font-size: 1.3rem; font-weight: 600; margin-bottom: 8px; }
+  .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 28px; }
+  .dropzone {
+    border: 2px dashed var(--border);
+    border-radius: 4px;
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .dropzone:hover, .dropzone.dragover { border-color: var(--accent); }
+  .dropzone .icon { font-size: 2rem; margin-bottom: 12px; }
+  .dropzone p { color: var(--muted); font-size: 0.95rem; }
+  .dropzone .hint { font-size: 0.8rem; margin-top: 8px; }
+  input[type=file] { display: none; }
+  .preview {
+    margin-top: 24px;
+    display: none;
+  }
+  .preview img {
+    width: 100%;
+    max-height: 400px;
+    object-fit: contain;
+    border-radius: 4px;
+    background: #000;
+  }
+  .preview .meta { margin-top: 12px; color: var(--muted); font-size: 0.85rem; }
+  .btn {
+    display: block;
+    width: 100%;
+    margin-top: 24px;
+    background: var(--accent);
+    border: none;
+    color: var(--fg);
+    font-size: 1rem;
+    padding: 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+  .btn:hover { background: #d4522a; }
+  .btn:disabled { background: var(--border); cursor: not-allowed; }
+  .status {
+    margin-top: 16px;
+    font-size: 0.9rem;
+    color: var(--muted);
+    min-height: 1.4em;
+  }
+  .status.error { color: #e07060; }
+  .status.ok { color: #7ec8a3; }
+  .features { margin-top: 24px; }
+  .features h2 { font-size: 0.85rem; color: var(--muted); letter-spacing: 0.1em; margin-bottom: 12px; }
+  .feature-item {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+  }
+  .feature-item .tag { color: var(--accent); font-size: 0.75rem; letter-spacing: 0.1em; }
+  .note {
+    margin-top: 32px;
+    color: var(--muted);
+    font-size: 0.75rem;
+    line-height: 1.6;
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="wordmark"><a href="index.html">写<span class="accent">探</span></a></div>
+    <a class="back" href="index.html">&larr; 検索に戻る</a>
+  </div>
+
+  <div class="card">
+    <h1>写真を登録</h1>
+    <p class="sub">写真を選ぶと、AIが特徴を自動で検出して検索できるようにします。</p>
+
+    <div class="dropzone" id="dropzone">
+      <div class="icon">+</div>
+      <p>写真をタップして選択</p>
+      <p class="hint">JPEG / PNG / HEIC 対応</p>
+    </div>
+    <input type="file" id="fileInput" accept="image/*">
+
+    <div class="preview" id="preview">
+      <img id="previewImg">
+      <div class="meta" id="previewMeta"></div>
+    </div>
+
+    <button class="btn" id="analyzeBtn" disabled>特徴を検出する</button>
+    <div class="status" id="status"></div>
+
+    <div class="features" id="features"></div>
+  </div>
+
+  <div class="note">
+    検出には Gemini Vision API が必要です。APIキーはブラウザに保存されず、サーバー経由で処理する本番環境では安全に扱われます。デモ版ではキー入力が必要です。
+  </div>
+
+<script>
+  var dropzone = document.getElementById('dropzone);
+  var fileInput = document.getElementById('fileInput);
+  var preview = document.getElementById('preview);
+  var previewImg = document.getElementById('previewImg);
+  var previewMeta = document.getElementById('previewMeta);
+  var analyzeBtn = document.getElementById('analyzeBtn);
+  var statusEl = document.getElementById('status);
+  var featuresEl = document.getElementById('features);
+  var currentFile = null;
+
+  dropzone.addEventListener('click', function() { fileInput.click(); });
+  dropzone.addEventListener('dragover', function(e) { e.preventDefault(); dropzone.classList.add('dragover'); });
+  dropzone.addEventListener('dragleave', function() { dropzone.classList.remove('dragover'); });
+  dropzone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    dropzone.classList.remove('dragover);
+    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', function() {
+    if (fileInput.files.length) handleFile(fileInput.files[0]);
+  });
+
+  function handleFile(file) {
+    currentFile = file;
+    var reader = new FileReader();
+    reader.onclick = function(e) {
+      previewImg.src = e.target.result;
+      preview.style.display = 'block';
+      previewMeta.textContent = file.name + ' / ' + Math.round(file.size / 1024) + ' KB';
+      analyzeBtn.disabled = false;
+      statusEl.textContent = '';
+      featuresEl.innerHTML = '';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  analyzeBtn.addEventListener('click', function() {
+    if (!currentFile) return;
+    var apiKey = localStorage.getItem('gemini_api_key') || prompt('Gemini API キーを入力してください（ブラウザの localStorage に保存されます）: ');
+    if (!apiKey) return;
+    localStorage.setItem('gemini_api_key', apiKey);
+
+    analyzeBtn.disabled = true;
+    statusEl.textContent = '解析中...';
+    statusEl.className = 'status';
+
+    var reader = new FileReader();
+    reader.onclick = function(e) {
+      var base64 = e.target.result.split(',')[1];
+      var prompt = 'この写真を分析してください。皮膚上のほくろ・シミ・色素沈着、顔の特徴（目・眉・鼻・口・輪郭）、写っているテキスト、その他の注目特徴をすべて検出し、それぞれの位置を bounding box で示してください。出力は JSON のみ。形式: {"features":[{"label":"mole"|"spot"|"scar"|"face"|"text"|"other","bbox":[x_min,y_min,x_max,y_max],"confidence":0.0-1.0,"description":"特徴の説明"}]}。bbox の座標は画像の幅・高さに対する正規化値（0-1）で、左上が (0,0)、右下が (1,1) です。特徴が見つからない場合は {"features":[]} を返してください。';
+
+      fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify([
+          { parts: [{ text: prompt }, { inline_data: { mime_type: currentFile.type || 'image/jpeg', data: base64 } }] }
+        ])
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (data.error) {
+          statusEl.textContent = 'エラー: ' + (data.error.message || JSON.stringify(data.error));
+          statusEl.className = 'status error';
+          analyzeBtn.disabled = false;
+          return;
+        }
+        var text = data.candidates[0].content.parts[0].text;
+        if (text.indexOf('```') === 0) {
+          var lines = text.split('\n);
+          text = lines.slice(1, lines[lines.length-1] === '```' ? -1 : undefined).join('\n');}
+        var result = JSON.parse(text);
+        showFeatures(result.features || []);
+        statusEl.textContent = (result.features || []).length + ' 件の特徴を検出しました';
+        statusEl.className = 'status ok';
+        saveToSearch(result.features || [], currentFile.name);
+      })
+      .catch(function(err) {
+        statusEl.textContent = '通信エラー: ' + err.message;
+        statusEl.className = 'status error';
+        analyzeBtn.disabled = false;
+      });
+    };
+    reader.readAsDataURL(currentFile);
+  });
+
+  function showFeatures(features) {
+    featuresEl.innerHTML = '<h2>検出された特徴</h2>';
+    if (!features.length) {
+      featuresEl.innerHTML += '<div class="feature-item">特徴は見つかりませんでした</div>';
+      return;
+    }
+    features.forEach(function(f) {
+      var div = document.createElement('div);
+      div.className = 'feature-item';
+      div.innerHTML = '<div class="tag">' + (f.label || 'other').toUpperCase() + ' / 信頼度 ' + Math.round((f.confidence || 0) * 100) + '%</div>' + (f.description || '');
+      featuresEl.appendChild(div);
+    });
+  }
+
+  function saveToSearch(features, filename) {
+    var db = JSON.parse(localStorage.getItem('shatan_db') || '[]);
+    db.push({ filename: filename, features: features, ts: Date.now() });
+    localStorage.setItem('shatan_db', JSON.stringify(db));
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>写探 Shatan</title>
+<meta name="description" content="写真の中の特徴、ほくろや傷、アクセサリーを手がかりに、似た写真を探す。">
+<meta property="og:title" content="写探 Shatan">
+<meta property="og:description" content="写真の中の特徴を手がかりに、似た写真を探す。">
+<meta property="og:type" content="website">
+<meta property="og:image" content="og.png">
+<style>
+  :root {
+    --bg: #12110f;
+    --fg: #f4f0e8;
+    --accent: #c44722;
+    --muted: #8a8478;
+    --card: #1c1a17;
+    --border: #2e2b27;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .wordmark {
+    font-size: 2.4rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    margin-bottom: 8px;
+  }
+  .wordmark .accent { color: var(--accent); }
+  .tagline {
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin-bottom: 40px;
+    letter-spacing: 0.05em;
+  }
+  .search-box {
+    width: 100%;
+    max-width: 560px;
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--card);
+  }
+  .search-box input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--fg);
+    font-size: 1.05rem;
+    padding: 16px 20px;
+    outline: none;
+    font-family: inherit;
+  }
+  .search-box input::placeholder { color: var(--muted); }
+  .search-box button {
+    background: var(--accent);
+    border: none;
+    color: var(--fg);
+    font-size: 1rem;
+    padding: 16px 24px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+  .search-box button:hover { background: #d4522a; }
+  .examples {
+    margin-top: 24px;
+    color: var(--muted);
+    font-size: 0.85rem;
+    text-align: center;
+  }
+  .examples span {
+    display: inline-block;
+    margin: 4px 6px;
+    padding: 4px 12px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    cursor: pointer;
+  }
+  .examples span:hover { border-color: var(--accent); color: var(--fg); }
+  .results { width: 100%; max-width: 560px; margin-top: 40px; }
+  .result-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+  }
+  .result-card .label { color: var(--accent); font-size: 0.8rem; letter-spacing: 0.1em; margin-bottom: 4px; }
+  .result-card .desc { font-size: 0.95rem; }
+  .result-card .file { color: var(--muted); font-size: 0.8rem; margin-top: 4px; }
+  .note {
+    margin-top: 48px;
+    color: var(--muted);
+    font-size: 0.75rem;
+    text-align: center;
+    max-width: 560px;
+    line-height: 1.6;
+  }
+  .nav {
+    margin-top: 24px;
+    text-align: center;
+  }
+  .nav a {
+    color: var(--muted);
+    font-size: 0.9rem;
+    text-decoration: none;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 2px;
+  }
+  .nav a:hover { color: var(--fg); border-color: var(--accent); }
+</style>
+</head>
+<body>
+  <div class="wordmark">写<span class="accent">探</span></div>
+  <div class="tagline">写真の特徴で、似た写真を探す</div>
+
+  <form class="search-box" id="searchForm" onsubmit="return doSearch(event)">
+    <input type="text" id="q" placeholder="ほくろ、傷、ネックレス…" autocomplete="off">
+    <button type="submit">検索</button>
+  </form>
+
+  <div class="examples">
+    <span onclick="setQuery('ほくろ')">ほくろ</span>
+    <span onclick="setQuery('傷')">傷</span>
+    <span onclick="setQuery('ネックレス')">ネックレス</span>
+  </div>
+
+  <div class="results" id="results"></div>
+
+  <div class="nav"><a href="upload.html">写真を登録する</a></div>
+
+  <div class="note">
+    写探は写真の中のユニークな目印（ほくろ・傷・アクセサリー・文字など）を手がかりに、似た写真を見つける検索サービスです。
+  </div>
+
+<script>
+  function setQuery(q) {
+    document.getElementById('q').value = q;
+    document.getElementById('q').focus();
+  }
+  function doSearch(e) {
+    e.preventDefault();
+    var q = document.getElementById('q').value.trim().toLowerCase();
+    if (!q) return false;
+    var results = document.getElementById('results);
+    results.innerHTML = '';
+
+    var db = JSON.parse(localStorage.getItem('shatan_db') || '[]);
+    var hits = [];
+    db.forEach(function(entry) {
+      (entry.features || []).forEach(function(f) {
+        var hay = ((f.label || '') + ' ' + (f.description || '')).toLowerCase();
+        if (hay.indexOf(q) !== -1) {
+          hits.push({ filename: entry.filename, feature: f });
+        }
+      });
+    });
+
+    if (!hits.length) {
+      results.innerHTML = '<div class="result-card"><div class="label">NO RESULTS</div><div class="desc">「' + q + '」に一致する写真はまだ登録されていません。<a href="upload.html" style="color:var(--accent)">写真を登録</a>してみてください。</div></div>';
+      return false;
+    }
+
+    hits.forEach(function(h) {
+      var card = document.createElement('div);
+      card.className = 'result-card';
+      card.innerHTML = '<div class="label">' + (h.feature.label || 'other').toUpperCase() + ' / 信頼度 ' + Math.round((h.feature.confidence || 0) * 100) + '%</div><div class="desc">' + (h.feature.description || '') + '</div><div class="file">' + h.filename + '</div>';
+      results.appendChild(card);
+    });
+    history.replaceState(null, '', '?q=' + encodeURIComponent(q));
+    return false;
+  }
+  (function() {
+    var params = new URLSearchParams(location.search);
+    var q = params.get('q);
+    if (q) {
+      document.getElementById('q').value = q;
+      doSearch(new Event('submit'));
+    }
+  })();
+</script>
+</body>
+</html>
