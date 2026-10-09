@@ -144,8 +144,8 @@
   </div>
 
 <script>
-  var pickBtn = document.getElementById('pickBtn');
-  var fileInput = document.getElementById('fileInput');
+  var pickBtn = document.getElementById('pickBtn);
+  var fileInput = document.getElementById('fileInput);
   var preview = document.getElementById('preview);
   var previewImg = document.getElementById('previewImg);
   var previewMeta = document.getElementById('previewMeta);
@@ -164,6 +164,7 @@
   function handleFile(file) {
     currentFile = file;
     var reader = new FileReader();
+    reader.onclick = null;
     reader.onload = function(e) {
       previewImg.src = e.target.result;
       preview.style.display = 'block';
@@ -193,7 +194,6 @@
 
       fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey, {
         method: 'POST',
-        Safari: null,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify([
           { parts: [{ text: prompt }, { inline_data: { mime_type: currentFile.type || 'image/jpeg', data: base64 } }] }
