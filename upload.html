@@ -105,7 +105,7 @@
     reader.onload = function (e) {
       var b64 = String(e.target.result).split(",")[1];
       var prompt = "この写真のほくろ・傷・顔・文字・アクセサリーを検出してください。JSONだけ返してください。形式: {\"features\":[{\"label\":\"mole\",\"description\":\"説明\",\"confidence\":0.9}]}";
-      fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + encodeURIComponent(key), {
+      fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=" + encodeURIComponent(key), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: current.type || "image/jpeg", data: b64 } }] }] })
