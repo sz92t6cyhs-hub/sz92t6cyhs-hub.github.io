@@ -106,40 +106,59 @@
     reader.onload = function (e) {
       var b64 = String(e.target.result).split(",")[1];
       var prompt = "この写真のほくろ・傷・顔・文字・アクセサリーを検出してください。JSONだけ返してください。形式: {\"features\":[{\"label\":\"mole\",\"description\":\"説明\",\"confidence\":0.9}]}";
-      fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=" + encodeURIComponent(key), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: current.type || "image/jpeg", data: b64 } }] }] })
-      }).then(function (r) { return r.json(); }).then(function (data) {
-        if (data.error) {
-          statusEl.className = "status err";
-          statusEl.textContent = data.error.message || "エラー";
+      // 送る画像は長辺1600pxのJPEGに縮小（HEICや大きすぎる写真でのエラーを防ぐ）
+      try {
+        var mx = 1600, sc = Math.min(1, mx / Math.max(img.naturalWidth, img.naturalHeight));
+        var cc = document.createElement("canvas");
+        cc.width = Math.round(img.naturalWidth * sc); cc.height = Math.round(img.naturalHeight * sc);
+        cc.getContext("2d").drawImage(img, 0, 0, cc.width, cc.height);
+        b64 = cc.toDataURL("image/jpeg", 0.9).split(",")[1];
+      } catch (ce) {}
+      var body = JSON.stringify({ contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: "image/jpeg", data: b64 } }] }],
+        generationConfig: { responseMimeType: "application/json" } });
+      var models = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash"];
+      function fail(msg) { statusEl.className = "status err"; statusEl.textContent = msg; go.disabled = false; }
+      function tryModel(k) {
+        var model = models[k];
+        fetch("https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": key.trim() },
+          body: body
+        }).then(function (r) { return r.json().then(function (data) { return { status: r.status, data: data }; }); })
+        .then(function (res) {
+          var data = res.data;
+          if (data.error) {
+            if ((res.status === 404 || res.status === 429) && k + 1 < models.length) { tryModel(k + 1); return; }
+            fail("エラー " + res.status + " (" + (data.error.status || "") + "): " + (data.error.message || ""));
+            return;
+          }
+          var c = data.candidates && data.candidates[0];
+          if (!c || !c.content || !c.content.parts) {
+            fail("Geminiが結果を返しませんでした（" + ((c && c.finishReason) || (data.promptFeedback && data.promptFeedback.blockReason) || "理由不明") + "）");
+            return;
+          }
+          var text = c.content.parts.map(function (p) { return p.text || ""; }).join("");
+          text = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
+          var result; try { result = JSON.parse(text); } catch (pe) { fail("結果の読み取りに失敗しました: " + text.slice(0, 120)); return; }
+          var features = result.features || [];
+          list.innerHTML = "";
+          features.forEach(function (f) {
+            var d = document.createElement("div");
+            d.className = "item";
+            var tag = document.createElement("div"); tag.className = "tag"; tag.textContent = f.label || "other";
+            d.appendChild(tag); d.appendChild(document.createTextNode(f.description || ""));
+            list.appendChild(d);
+          });
+          var db = JSON.parse(localStorage.getItem("shatan_db") || "[]");
+          db.push({ filename: current.name, features: features, thumb: makeThumb(), ts: Date.now() });
+          try { localStorage.setItem("shatan_db", JSON.stringify(db)); }
+          catch (qe) { db[db.length - 1].thumb = null; localStorage.setItem("shatan_db", JSON.stringify(db)); }
+          statusEl.className = "status ok";
+          statusEl.textContent = features.length + " 件を保存しました（" + model + "）";
           go.disabled = false;
-          return;
-        }
-        var text = data.candidates[0].content.parts[0].text;
-        text = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```$/i, "").trim();
-        var result = JSON.parse(text);
-        var features = result.features || [];
-        list.innerHTML = "";
-        features.forEach(function (f) {
-          var d = document.createElement("div");
-          d.className = "item";
-          d.innerHTML = "<div class=\"tag\">" + (f.label || "other") + "</div>" + (f.description || "").replace(/</g, "<").replace(/>/g, ">").replace(/\n/g, "<br>");
-          list.appendChild(d);
-        });
-        var db = JSON.parse(localStorage.getItem("shatan_db") || "[]");
-        db.push({ filename: current.name, features: features, thumb: makeThumb(), ts: Date.now() });
-        try { localStorage.setItem("shatan_db", JSON.stringify(db)); }
-        catch (qe) { db[db.length - 1].thumb = null; localStorage.setItem("shatan_db", JSON.stringify(db)); }
-        statusEl.className = "status ok";
-        statusEl.textContent = features.length + " 件を保存しました";
-        go.disabled = false;
-      }).catch(function (err) {
-        statusEl.className = "status err";
-        statusEl.textContent = err.message;
-        go.disabled = false;
-      });
+        }).catch(function (err) { fail("通信エラー: " + err.message + "（ネット接続か、ブラウザの通信制限の可能性）"); });
+      }
+      tryModel(0);
     };
     reader.readAsDataURL(current);
   });
