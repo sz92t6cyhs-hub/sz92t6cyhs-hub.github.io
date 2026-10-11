@@ -22,8 +22,7 @@
     border-radius:4px; letter-spacing:0.05em;
     cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
-  .pick { position:relative; overflow:hidden; }
-  .pick input { position:absolute; top:0; left:0; right:0; bottom:0; width:100%; height:100%; opacity:0; cursor:pointer; font-size:100px; }
+  .native { display:block; width:100%; margin-top:10px; padding:12px; font-size:1rem; color:var(--fg); background:var(--card); border:1px solid var(--border); border-radius:4px; }
   .preview { margin-top:20px; display:none; }
   .preview img { width:100%; max-height:420px; object-fit:contain; background:#000; border-radius:4px; }
   .meta { margin-top:8px; color:var(--muted); font-size:0.85rem; }
@@ -43,11 +42,8 @@
   <div class="wordmark"><a href="index.html">写<span>探</span></a></div>
   <h1>写真を登録</h1>
   <p class="sub">下のボタンをタップすると、写真を選べます。</p>
-  <label class="pick" for="fileInput">写真を選ぶ
-    <input id="fileInput" type="file" accept="image/*">
-  </label>
-  <p class="sub" style="margin-top:12px">ボタンで選べないときは、こちらから選んでください。</p>
-  <input id="fileInput2" type="file" accept="image/*" style="color:var(--muted);font-size:1rem">
+  <label class="pick" for="fileInput">写真を選ぶ</label>
+  <input id="fileInput" class="native" type="file" accept="image/*">
   <div class="preview" id="preview">
     <img id="previewImg" alt="プレビュー">
     <div class="meta" id="meta"></div>
@@ -97,7 +93,6 @@
     reader.readAsDataURL(current);
   }
   input.addEventListener("change", onPick);
-  document.getElementById("fileInput2").addEventListener("change", onPick);
 
   go.addEventListener("click", function () {
     if (!current) return;
