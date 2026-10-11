@@ -111,7 +111,7 @@
     var reader = new FileReader();
     reader.onload = function (e) {
       var b64 = String(e.target.result).split(",")[1];
-      var prompt = "この写真のほくろ・傷・顔・文字・アクセサリーを検出してください。JSONだけ返してください。形式: {\"features\":[{\"label\":\"mole\",\"description\":\"説明\",\"confidence\":0.9}]}";
+      var prompt = "この写真に写っている人の特徴を、小さく薄いものも含めて一つ残らず検出してください。対象: ほくろ（周りより暗い小さな点も含む）、傷・傷あと、シミ、顔の特徴、文字、アクセサリー。ほくろは一つずつ別の項目にし、説明には「左頬の小さなほくろ」「右目の下2cmのほくろ」のように顔や体のどこにあるかを日本語で具体的に書いてください。毛穴や影は除外。JSONだけ返してください。形式: {\"features\":[{\"label\":\"mole|scar|spot|face|text|accessory\",\"description\":\"説明\",\"confidence\":0.9}]}";
       // 送る画像は長辺1600pxのJPEGに縮小（HEICや大きすぎる写真でのエラーを防ぐ）
       try {
         var mx = 1600, sc = Math.min(1, mx / Math.max(img.naturalWidth, img.naturalHeight));
