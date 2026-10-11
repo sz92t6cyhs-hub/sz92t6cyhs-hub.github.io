@@ -119,23 +119,41 @@
     st.textContent = "解析中…";
     var b64 = cv.toDataURL("image/jpeg", 0.9).split(",")[1];
     var prompt = "この写真の皮膚上のほくろをすべて検出してください。JSONだけ返してください。形式: {\"features\":[{\"bbox\":[x_min,y_min,x_max,y_max],\"description\":\"位置の説明（例: 左頬の小さなほくろ）\",\"confidence\":0.9}]} bboxは画像の幅・高さに対する0〜1の正規化座標で左上が(0,0)。見つからなければ{\"features\":[]}。";
-    fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=" + encodeURIComponent(key.trim()), {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: "image/jpeg", data: b64 } }] }],
-        generationConfig: { responseMimeType: "application/json" } })
-    }).then(function (r) { return r.json(); }).then(function (data) {
-      if (data.error) { st.textContent = "エラー: " + (data.error.message || ""); return; }
-      var t = data.candidates[0].content.parts[0].text.replace(/^```(json)?\s*/i, "").replace(/```\s*$/, "").trim();
-      marks = (JSON.parse(t).features) || [];
-      var list = $("list"); list.innerHTML = "";
-      marks.forEach(function (m, i) {
-        var d = document.createElement("div"); d.className = "item";
-        d.textContent = (i + 1) + ". " + (m.description || "ほくろ");
-        list.appendChild(d);
-      });
-      st.textContent = marks.length + " 個のほくろに印をつけました";
-      render();
-    }).catch(function (e) { st.textContent = "エラー: " + e.message; });
+    var body = JSON.stringify({ contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: "image/jpeg", data: b64 } }] }],
+      generationConfig: { responseMimeType: "application/json" } });
+    var models = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash"];
+    function tryModel(k) {
+      var model = models[k];
+      fetch("https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent", {
+        method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key.trim() }, body: body
+      }).then(function (r) { return r.json().then(function (data) { return { status: r.status, data: data }; }); })
+      .then(function (res) {
+        var data = res.data;
+        if (data.error) {
+          // モデルが使えない場合だけ次のモデルを試す
+          if ((res.status === 404 || res.status === 429) && k + 1 < models.length) { tryModel(k + 1); return; }
+          st.textContent = "エラー " + res.status + " (" + (data.error.status || "") + "): " + (data.error.message || "");
+          return;
+        }
+        var c = data.candidates && data.candidates[0];
+        if (!c || !c.content || !c.content.parts) {
+          st.textContent = "Geminiが結果を返しませんでした（" + ((c && c.finishReason) || (data.promptFeedback && data.promptFeedback.blockReason) || "理由不明") + "）";
+          return;
+        }
+        var t = c.content.parts.map(function (p) { return p.text || ""; }).join("").replace(/^```(json)?\s*/i, "").replace(/```\s*$/, "").trim();
+        var parsed; try { parsed = JSON.parse(t); } catch (pe) { st.textContent = "結果の読み取りに失敗しました: " + t.slice(0, 120); return; }
+        marks = parsed.features || [];
+        var list = $("list"); list.innerHTML = "";
+        marks.forEach(function (m, i) {
+          var d = document.createElement("div"); d.className = "item";
+          d.textContent = (i + 1) + ". " + (m.description || "ほくろ");
+          list.appendChild(d);
+        });
+        st.textContent = marks.length + " 個のほくろに印をつけました（" + model + "）";
+        render();
+      }).catch(function (e) { st.textContent = "通信エラー: " + e.message + "（ネット接続か、ブラウザの通信制限の可能性）"; });
+    }
+    tryModel(0);
   });
 
   $("save").addEventListener("click", function () {
