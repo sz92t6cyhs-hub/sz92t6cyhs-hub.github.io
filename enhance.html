@@ -34,6 +34,12 @@
   <div class="row"><label>コントラスト <span id="vC"></span></label><input id="contrast" type="range" min="0" max="2" step="0.05" value="0.6"></div>
   <div class="row"><label>ほくろ強調（暗い点を濃く） <span id="vM"></span></label><input id="mole" type="range" min="0" max="2" step="0.05" value="0.8"></div>
   <button class="btn" id="orig" type="button">押している間は元の写真</button>
+  <div style="margin-top:16px">
+    <label for="apiKey" style="color:var(--muted);font-size:0.9rem">Gemini APIキー（この端末内にだけ保存）</label>
+    <input id="apiKey" type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="ここにAPIキーを貼り付け" style="display:block;width:100%;margin-top:6px;padding:14px;font-size:16px;color:var(--fg);background:var(--card);border:1px solid var(--border);border-radius:4px">
+    <button id="saveKey" type="button" style="display:block;width:100%;margin-top:8px;background:var(--card);color:var(--fg);border:1px solid var(--border);font-size:1rem;font-weight:700;padding:12px;border-radius:4px">キーを保存</button>
+    <div id="keyStatus" style="margin-top:6px;color:var(--muted);font-size:0.85rem"></div>
+  </div>
   <button class="btn main" id="ai" type="button">Geminiでほくろに印をつける</button>
   <button class="btn" id="save" type="button">画像を保存</button>
   <div class="status" id="st"></div>
@@ -113,8 +119,8 @@
 
   $("ai").addEventListener("click", function () {
     if (!src) { st.textContent = "先に写真を選んでください"; return; }
-    var key = localStorage.getItem("gemini_api_key") || window.prompt("Gemini APIキーを入力（aistudio.google.com で取得）");
-    if (!key) return;
+    var key = localStorage.getItem("gemini_api_key");
+    if (!key) { alert("先に上の欄にGemini APIキーを貼って「キーを保存」を押してください"); return; }
     localStorage.setItem("gemini_api_key", key.trim());
     st.textContent = "解析中…";
     var b64 = cv.toDataURL("image/jpeg", 0.9).split(",")[1];
@@ -169,6 +175,17 @@
   });
 
   $("clearKey").addEventListener("click", function (e) { e.preventDefault(); localStorage.removeItem("gemini_api_key"); st.textContent = "APIキーを消しました"; });
+
+  (function () {
+    var kin = document.getElementById("apiKey"), ks = document.getElementById("keyStatus");
+    function show() { ks.textContent = localStorage.getItem("gemini_api_key") ? "キー保存済み（変えるときは新しいキーを貼って保存）" : "キーがまだ保存されていません"; }
+    document.getElementById("saveKey").addEventListener("click", function () {
+      var v = kin.value.replace(/\s+/g, "");
+      if (!v) { ks.textContent = "キーが空です"; return; }
+      localStorage.setItem("gemini_api_key", v); kin.value = ""; show();
+    });
+    show();
+  })();
 })();
 </script>
 </body>

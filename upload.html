@@ -48,6 +48,12 @@
     <img id="previewImg" alt="プレビュー">
     <div class="meta" id="meta"></div>
   </div>
+  <div style="margin-top:16px">
+    <label for="apiKey" style="color:var(--muted);font-size:0.9rem">Gemini APIキー（この端末内にだけ保存）</label>
+    <input id="apiKey" type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="ここにAPIキーを貼り付け" style="display:block;width:100%;margin-top:6px;padding:14px;font-size:16px;color:var(--fg);background:var(--card);border:1px solid var(--border);border-radius:4px">
+    <button id="saveKey" type="button" style="display:block;width:100%;margin-top:8px;background:var(--card);color:var(--fg);border:1px solid var(--border);font-size:1rem;font-weight:700;padding:12px;border-radius:4px">キーを保存</button>
+    <div id="keyStatus" style="margin-top:6px;color:var(--muted);font-size:0.85rem"></div>
+  </div>
   <button class="btn" id="go" type="button" disabled>特徴を検出する</button>
   <div class="status" id="status"></div>
   <div id="list"></div>
@@ -96,8 +102,8 @@
 
   go.addEventListener("click", function () {
     if (!current) return;
-    var key = localStorage.getItem("gemini_api_key") || window.prompt("Gemini APIキーを入力");
-    if (!key) return;
+    var key = localStorage.getItem("gemini_api_key");
+    if (!key) { alert("先に上の欄にGemini APIキーを貼って「キーを保存」を押してください"); return; }
     localStorage.setItem("gemini_api_key", key);
     go.disabled = true;
     statusEl.className = "status";
@@ -162,6 +168,17 @@
     };
     reader.readAsDataURL(current);
   });
+
+  (function () {
+    var kin = document.getElementById("apiKey"), ks = document.getElementById("keyStatus");
+    function show() { ks.textContent = localStorage.getItem("gemini_api_key") ? "キー保存済み（変えるときは新しいキーを貼って保存）" : "キーがまだ保存されていません"; }
+    document.getElementById("saveKey").addEventListener("click", function () {
+      var v = kin.value.replace(/\s+/g, "");
+      if (!v) { ks.textContent = "キーが空です"; return; }
+      localStorage.setItem("gemini_api_key", v); kin.value = ""; show();
+    });
+    show();
+  })();
 })();
 </script>
 </body>
