@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>写真を登録 - 写探</title>
 <style>
@@ -22,7 +23,7 @@
     cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
   .pick { position:relative; overflow:hidden; }
-  .pick input { position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; font-size:100px; }
+  .pick input { position:absolute; top:0; left:0; right:0; bottom:0; width:100%; height:100%; opacity:0; cursor:pointer; font-size:100px; }
   .preview { margin-top:20px; display:none; }
   .preview img { width:100%; max-height:420px; object-fit:contain; background:#000; border-radius:4px; }
   .meta { margin-top:8px; color:var(--muted); font-size:0.85rem; }
@@ -45,6 +46,8 @@
   <label class="pick" for="fileInput">写真を選ぶ
     <input id="fileInput" type="file" accept="image/*">
   </label>
+  <p class="sub" style="margin-top:12px">ボタンで選べないときは、こちらから選んでください。</p>
+  <input id="fileInput2" type="file" accept="image/*" style="color:var(--muted);font-size:1rem">
   <div class="preview" id="preview">
     <img id="previewImg" alt="プレビュー">
     <div class="meta" id="meta"></div>
@@ -78,9 +81,10 @@
     } catch (e) { return null; }
   }
 
-  input.addEventListener("change", function () {
-    if (!input.files || !input.files.length) return;
-    current = input.files[0];
+  function onPick() {
+    var src = this;
+    if (!src.files || !src.files.length) return;
+    current = src.files[0];
     var reader = new FileReader();
     reader.onload = function (e) {
       img.src = e.target.result;
@@ -91,7 +95,9 @@
       list.innerHTML = "";
     };
     reader.readAsDataURL(current);
-  });
+  }
+  input.addEventListener("change", onPick);
+  document.getElementById("fileInput2").addEventListener("change", onPick);
 
   go.addEventListener("click", function () {
     if (!current) return;
